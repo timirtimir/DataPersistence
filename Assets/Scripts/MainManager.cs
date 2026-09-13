@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 using UnityEngine.InputSystem; // MIGRATED: New Input System namespace
 
 public class MainManager : MonoBehaviour
@@ -10,9 +11,13 @@ public class MainManager : MonoBehaviour
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
+    public static MainManager Instance;
 
     public Text ScoreText;
     public GameObject GameOverText;
+
+    public string playerName;
+    private int highScore;
 
     private bool m_Started = false;
     private int m_Points;
@@ -25,6 +30,18 @@ public class MainManager : MonoBehaviour
     // MIGRATED: bind the Space key as a button action
     void Awake()
     {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        
+        if (PlayerManager.Instance != null)
+        {
+            playerName = PlayerManager.Instance.playerName;
+        }
         m_LaunchAction = new InputAction("Launch", InputActionType.Button, "<Keyboard>/space");
     }
 
@@ -57,6 +74,7 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        ScoreText.text = $"Score : {playerName} {m_Points}";
     }
 
     private void Update()
@@ -86,12 +104,29 @@ public class MainManager : MonoBehaviour
     void AddPoint(int point)
     {
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"Score : {playerName} {m_Points}";
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public int HighScore;
+        public string p_name;
+    }
+    public void SaveColor()
+    {
+        SaveData data = new SaveData();
+        //data.HighScore = HighScore;
+        //data.p_name = p_name;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
     }
 }
